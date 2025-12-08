@@ -221,12 +221,17 @@ const applyCustomCSS = (css) => {
   }
   styleElement.textContent = css;
 };
-// Fixed Settings Modal - Uses props from main app
-function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode, onDarkModeChange, settings, updateSetting }) {
+
+
+
+// Fixed Settings Modal - single source of truth = settings.*
+function SettingsModal({ isOpen, onClose, settings, updateSetting }) {
   const [activeTab, setActiveTab] = useState('appearance');
 
-  const themeGradient = colorThemes[currentTheme] || colorThemes.primary;
+  // 🔹 Use theme from settings, not props like currentTheme
+  const themeGradient = colorThemes[settings.themeColor] || colorThemes.primary;
 
+  // 🔹 Every setting change goes through this (instant apply)
   const handleSettingChange = (key, value) => {
     updateSetting(key, value);
   };
@@ -278,7 +283,10 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
           if (data.shortcuts) lsSet('dash_shortcuts', data.shortcuts);
           if (data.settings) {
             Object.entries(data.settings).forEach(([key, value]) => {
-              localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
+              localStorage.setItem(
+                key,
+                typeof value === 'object' ? JSON.stringify(value) : value
+              );
             });
           }
           alert('Data imported successfully! Page will reload.');
@@ -304,13 +312,15 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
     const shortcuts = lsGet('dash_shortcuts', []);
     const completedTasks = tasks.filter(t => t.done).length;
     
-    alert(`📊 Dashboard Statistics:\n\n` +
-          `✅ Total Tasks: ${tasks.length}\n` +
-          `🎯 Completed: ${completedTasks}\n` +
-          `🔗 Shortcuts: ${shortcuts.length}\n` +
-          `🎨 Theme: ${settings.themeColor}\n` +
-          `🌙 Dark Mode: ${settings.darkMode ? 'On' : 'Off'}\n` +
-          `💾 Storage Used: ${JSON.stringify(localStorage).length} bytes`);
+    alert(
+      `📊 Dashboard Statistics:\n\n` +
+      `✅ Total Tasks: ${tasks.length}\n` +
+      `🎯 Completed: ${completedTasks}\n` +
+      `🔗 Shortcuts: ${shortcuts.length}\n` +
+      `🎨 Theme: ${settings.themeColor}\n` +
+      `🌙 Dark Mode: ${settings.darkMode ? 'On' : 'Off'}\n` +
+      `💾 Storage Used: ${JSON.stringify(localStorage).length} bytes`
+    );
   };
 
   const showDebugInfo = () => {
@@ -383,7 +393,7 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
             </div>
           </div>
 
-          {/* Settings Content - Now using props from main app */}
+          {/* Settings Content */}
           <div className="flex-1 p-6 overflow-y-auto">
             {activeTab === 'appearance' && (
               <div className="space-y-6">
@@ -398,7 +408,9 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
                         key={key}
                         onClick={() => handleSettingChange('themeColor', key)}
                         className={`p-4 rounded-2xl bg-gradient-to-r ${gradient} transition-all duration-200 ${
-                          settings.themeColor === key ? 'ring-4 ring-blue-500 ring-opacity-50 scale-105' : 'hover:scale-105'
+                          settings.themeColor === key
+                            ? 'ring-4 ring-blue-500 ring-opacity-50 scale-105'
+                            : 'hover:scale-105'
                         }`}
                       >
                         <div className="text-white text-sm font-medium capitalize">
@@ -592,6 +604,7 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
     </motion.div>
   );
 }
+
 
 // Reusable Toggle Component
 function SettingToggle({ icon, title, description, value, onChange }) {
@@ -1952,7 +1965,7 @@ function NewsPage({ currentTheme }){
 }
 
 // Main Dashboard page - Updated to accept settings props
-function Dashboard({ currentTheme, onThemeChange, darkMode, onDarkModeChange, settings, updateSetting }){
+function Dashboard({ currentTheme, settings, updateSetting }){
   const { shortcuts, add, remove, isModalOpen, openModal, closeModal } = useShortcuts();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
@@ -1976,10 +1989,6 @@ function Dashboard({ currentTheme, onThemeChange, darkMode, onDarkModeChange, se
           <SettingsModal 
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
-            currentTheme={currentTheme}
-            onThemeChange={onThemeChange}
-            darkMode={darkMode}
-            onDarkModeChange={onDarkModeChange}
             settings={settings}  // Add this line
             updateSetting={updateSetting}  // Add this line
           />
