@@ -234,9 +234,6 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
   const tabs = [
     { id: 'appearance', name: '🎨 Appearance', icon: '🎨' },
     { id: 'functionality', name: '⚙️ Functionality', icon: '⚙️' },
-    { id: 'notifications', name: '🔔 Notifications', icon: '🔔' },
-    { id: 'data', name: '📊 Data & Privacy', icon: '📊' },
-    { id: 'advanced', name: '🛠️ Advanced', icon: '🛠️' },
   ];
 
   // Quick actions
@@ -392,15 +389,6 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
               <div className="space-y-6">
                 <h4 className="text-lg font-bold text-gray-800 dark:text-white">Appearance</h4>
                 
-                {/* Dark Mode */}
-                <SettingToggle
-                  icon="🌙"
-                  title="Dark Mode"
-                  description="Switch between light and dark themes"
-                  value={settings.darkMode}
-                  onChange={(v) => handleSettingChange('darkMode', v)}
-                />
-
                 {/* Theme Color */}
                 <div className="space-y-3">
                   <h5 className="font-semibold text-gray-800 dark:text-white">Theme Color</h5>
@@ -519,14 +507,6 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
                 />
 
                 <SettingToggle
-                  icon="🌤️"
-                  title="Weather Widget"
-                  description="Show weather information in dashboard"
-                  value={settings.weatherWidget}
-                  onChange={(v) => handleSettingChange('weatherWidget', v)}
-                />
-
-                <SettingToggle
                   icon="📝"
                   title="Quick Notes"
                   description="Enable quick notes panel"
@@ -586,187 +566,12 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange, darkMode,
                 </div>
               </div>
             )}
-
-            {activeTab === 'notifications' && (
-              <div className="space-y-6">
-                <h4 className="text-lg font-bold text-gray-800 dark:text-white">Notifications</h4>
-                
-                <SettingToggle
-                  icon="💻"
-                  title="Desktop Notifications"
-                  description="Show desktop notifications for tasks"
-                  value={settings.desktopNotifications}
-                  onChange={(v) => handleSettingChange('desktopNotifications', v)}
-                />
-
-                <SettingToggle
-                  icon="🔊"
-                  title="Task Sounds"
-                  description="Play sounds when completing tasks"
-                  value={settings.taskSounds}
-                  onChange={(v) => handleSettingChange('taskSounds', v)}
-                />
-
-                <SettingToggle
-                  icon="📑"
-                  title="Browser Tab Alerts"
-                  description="Change tab title for notifications"
-                  value={settings.browserAlerts}
-                  onChange={(v) => handleSettingChange('browserAlerts', v)}
-                />
-
-                <SettingToggle
-                  icon="📈"
-                  title="Daily Reports"
-                  description="Show daily task summary"
-                  value={settings.dailyReports}
-                  onChange={(v) => handleSettingChange('dailyReports', v)}
-                />
-              </div>
-            )}
-
-            {activeTab === 'data' && (
-              <div className="space-y-6">
-                <h4 className="text-lg font-bold text-gray-800 dark:text-white">Data & Privacy</h4>
-                
-                <SettingToggle
-                  icon="🔒"
-                  title="Data Encryption"
-                  description="Encrypt stored data (experimental)"
-                  value={settings.dataEncryption}
-                  onChange={(v) => handleSettingChange('dataEncryption', v)}
-                />
-
-                <SettingToggle
-                  icon="🕶️"
-                  title="Privacy Mode"
-                  description="Hide sensitive information"
-                  value={settings.privacyMode}
-                  onChange={(v) => handleSettingChange('privacyMode', v)}
-                />
-
-                {/* Auto Backup */}
-                <div className="space-y-3">
-                  <h5 className="font-semibold text-gray-800 dark:text-white">Auto Backup</h5>
-                  <div className="grid grid-cols-3 gap-3">
-                    {['never', 'daily', 'weekly'].map((freq) => (
-                      <button
-                        key={freq}
-                        onClick={() => handleSettingChange('autoBackup', freq)}
-                        className={`p-3 rounded-2xl border-2 transition-all duration-200 ${
-                          settings.autoBackup === freq
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-blue-300'
-                        }`}
-                      >
-                        <div className="font-semibold text-gray-800 dark:text-white capitalize">
-                          {freq}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="space-y-3">
-                  <h5 className="font-semibold text-gray-800 dark:text-white">Data Management</h5>
-                  <div className="grid grid-cols-2 gap-3">
-                    {quickActions.map((action, index) => (
-                      <button
-                        key={index}
-                        onClick={action.action}
-                        className="p-3 rounded-2xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200 text-left group"
-                      >
-                        <div className="text-2xl mb-1 group-hover:scale-110 transition-transform duration-200">
-                          {action.icon}
-                        </div>
-                        <div className="text-sm font-medium text-gray-800 dark:text-white">
-                          {action.label}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'advanced' && (
-              <div className="space-y-6">
-                <h4 className="text-lg font-bold text-gray-800 dark:text-white">Advanced Settings</h4>
-                
-                <SettingToggle
-                  icon="🐞"
-                  title="Developer Mode"
-                  description="Show debug information and tools"
-                  value={settings.developerMode}
-                  onChange={(v) => handleSettingChange('developerMode', v)}
-                />
-
-                <SettingToggle
-                  icon="🧪"
-                  title="Experimental Features"
-                  description="Enable cutting-edge features (may be unstable)"
-                  value={settings.experimentalFeatures}
-                  onChange={(v) => handleSettingChange('experimentalFeatures', v)}
-                />
-
-                <SettingToggle
-                  icon="⚡"
-                  title="Performance Mode"
-                  description="Reduce animations for better performance"
-                  value={settings.performanceMode}
-                  onChange={(v) => handleSettingChange('performanceMode', v)}
-                />
-
-                {/* Custom CSS */}
-                <div className="space-y-3">
-                  <h5 className="font-semibold text-gray-800 dark:text-white">Custom CSS</h5>
-                  <textarea
-                    value={settings.customCSS}
-                    onChange={(e) => handleSettingChange('customCSS', e.target.value)}
-                    placeholder="Enter your custom CSS here..."
-                    className="w-full h-32 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-mono text-sm"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Custom CSS will be applied to the dashboard. Use with caution.
-                  </p>
-                </div>
-
-                {/* API Configuration */}
-                <div className="space-y-3">
-                  <h5 className="font-semibold text-gray-800 dark:text-white">API Configuration</h5>
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      placeholder="News API Key"
-                      value={settings.apiConfig?.newsApiKey || ''}
-                      onChange={(e) => handleSettingChange('apiConfig', {
-                        ...settings.apiConfig,
-                        newsApiKey: e.target.value
-                      })}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Weather API Key"
-                      value={settings.apiConfig?.weatherApiKey || ''}
-                      onChange={(e) => handleSettingChange('apiConfig', {
-                        ...settings.apiConfig,
-                        weatherApiKey: e.target.value
-                      })}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Footer */}
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
           <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-            <span>Dashboard v2.0 • {Object.keys(localStorage).length} items stored</span>
             <div className="flex space-x-3">
               <button 
                 onClick={exportAllData}
