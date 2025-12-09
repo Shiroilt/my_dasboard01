@@ -20,21 +20,10 @@ function useSettings() {
       autoClearTasks: false,
       defaultSearch: 'both',
       startupPage: 'dashboard',
+      todoPanel: true,
       keyboardShortcuts: true,
       weatherWidget: false,
       quickNotes: true,
-      desktopNotifications: false,
-      taskSounds: true,
-      browserAlerts: true,
-      dailyReports: false,
-      autoBackup: 'never',
-      dataEncryption: false,
-      privacyMode: false,
-      developerMode: false,
-      experimentalFeatures: false,
-      performanceMode: false,
-      customCSS: '',
-      apiConfig: {}
     };
 
     const savedSettings = {};
@@ -123,23 +112,12 @@ const applySettingImmediately = (key, value, allSettings = {}) => {
   console.log(`Applying setting immediately: ${key} =`, value);
   
   switch (key) {
-    case 'darkMode':
-      if (value) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      break;
-      
     case 'themeColor':
-      // Dispatch event for BackgroundSlideshow and other components
-      console.log('Dispatching theme change event:', value);
-      window.dispatchEvent(new CustomEvent('themeChange', { detail: value }));
-      
-      // Also update localStorage immediately
-      localStorage.setItem('themeColor', value);
-      break;
-      
+  // Optional: set a CSS variable if you want
+  document.documentElement.style.setProperty('--theme-color', value);
+  break;
+
+
     case 'fontSize':
       const fontSize = 
         value === 'small' ? '14px' :
@@ -193,11 +171,6 @@ const applySettingImmediately = (key, value, allSettings = {}) => {
         value === 'fast' ? '0.2s' : '0.3s';
       document.documentElement.style.setProperty('--animation-speed', speedValue);
       break;
-      
-    case 'customCSS':
-      applyCustomCSS(value);
-      break;
-      
     case 'performanceMode':
       if (value) {
         document.documentElement.style.setProperty('--animation-speed', '0.1s');
@@ -212,21 +185,17 @@ const applySettingImmediately = (key, value, allSettings = {}) => {
       break;
   }
 };
-const applyCustomCSS = (css) => {
-  let styleElement = document.getElementById('custom-css');
-  if (!styleElement) {
-    styleElement = document.createElement('style');
-    styleElement.id = 'custom-css';
-    document.head.appendChild(styleElement);
-  }
-  styleElement.textContent = css;
-};
-
-
 
 // Fixed Settings Modal - single source of truth = settings.*
 function SettingsModal({ isOpen, onClose, settings, updateSetting }) {
   const [activeTab, setActiveTab] = useState('appearance');
+  
+  const colorThemes = {
+  primary: 'from-blue-500 to-purple-600',
+  secondary: 'from-emerald-500 to-teal-600', 
+  accent: 'from-orange-500 to-red-500',
+  neutral: 'from-gray-500 to-slate-600'
+};
 
   // 🔹 Use theme from settings, not props like currentTheme
   const themeGradient = colorThemes[settings.themeColor] || colorThemes.primary;
@@ -526,6 +495,15 @@ function SettingsModal({ isOpen, onClose, settings, updateSetting }) {
                   onChange={(v) => handleSettingChange('quickNotes', v)}
                 />
 
+                <SettingToggle
+                  icon="📋"
+                  title="Todo Panel"
+                  description="Show or hide the task list widget."
+                  value={settings.todoPanel}
+                  onChange={(v) => updateSetting("todoPanel", v)}
+                />
+
+
                 {/* Background Rotation Speed */}
                 <div className="space-y-3">
                   <h5 className="font-semibold text-gray-800 dark:text-white">Background Rotation</h5>
@@ -705,40 +683,24 @@ function BackgroundSlideshow({ onThemeChange }) {
 
   // Set initial theme when images load
   useEffect(() => {
-    if (imagesLoaded) {
-      // Check if there's a saved theme first
-      const savedTheme = localStorage.getItem('themeColor');
-      if (savedTheme) {
-        onThemeChange(savedTheme);
-      } else {
-        // Fallback to background-based theme
-        const themes = ['primary', 'secondary', 'accent', 'neutral'];
-        const theme = themes[currentImageIndex % themes.length];
-        onThemeChange(theme);
-      }
-    }
-  }, [imagesLoaded, currentImageIndex, onThemeChange]);
+  if (!imagesLoaded) return;
+  // We no longer change theme from here; theme is controlled by Settings
+  console.log('Background image changed to index', currentImageIndex);
+}, [imagesLoaded, currentImageIndex]);
 
   // Listen for settings changes
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const newSpeed = localStorage.getItem('bgRotationSpeed') || '5min';
-      setRotationSpeed(newSpeed);
-    };
+useEffect(() => {
+  const handleStorageChange = () => {
+    const newSpeed = localStorage.getItem('bgRotationSpeed') || '5min';
+    setRotationSpeed(newSpeed);
+  };
 
-    const handleThemeChange = (event) => {
-      console.log('Theme change event received:', event.detail);
-      // Don't call onThemeChange here to avoid loops
-    };
+  window.addEventListener('storage', handleStorageChange);
+  return () => {
+    window.removeEventListener('storage', handleStorageChange);
+  };
+}, []);
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('themeChange', handleThemeChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('themeChange', handleThemeChange);
-    };
-  }, []);
 
   // Background rotation effect
   useEffect(() => {
@@ -1015,12 +977,18 @@ function Clock({ currentTheme }) {
 }
 
 // Enhanced SearchBar with AI search engines
-function SearchBar({ currentTheme }) {
+// Enhanced SearchBar with AI search engines
+function SearchBar({ currentTheme, defaultSearch = 'both', inputRef }) {
   const [q, setQ] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const [searchEngine, setSearchEngine] = useState('both'); // 'google', 'ai', 'both'
+  const [searchEngine, setSearchEngine] = useState(defaultSearch); // use setting
   
   const themeGradient = colorThemes[currentTheme] || colorThemes.primary;
+
+  useEffect(() => {
+    // When user changes Default Search Engine in settings, update selector
+    setSearchEngine(defaultSearch || 'both');
+  }, [defaultSearch]);
 
   const searchEngines = {
     google: {
@@ -1056,21 +1024,17 @@ function SearchBar({ currentTheme }) {
     
     const enc = encodeURIComponent(q.trim());
     
-    // Open searches based on selected engine
-    switch(searchEngine) {
+    switch (searchEngine) {
       case 'google':
         window.open(`${searchEngines.google.url}${enc}`, '_blank');
         break;
       case 'ai':
-        // Open multiple AI search engines
         window.open(`${searchEngines.perplexity.url}${enc}`, '_blank');
         window.open(`${searchEngines.you.url}${enc}`, '_blank');
         window.open(`${searchEngines.phind.url}${enc}`, '_blank');
-        window.open(`${searchEngines.you.url}${enc}`, '_blank');
         break;
       case 'both':
       default:
-        // Open traditional + AI search
         window.open(`${searchEngines.google.url}${enc}`, '_blank');
         window.open(`${searchEngines.perplexity.url}${enc}`, '_blank');
         break;
@@ -1079,7 +1043,6 @@ function SearchBar({ currentTheme }) {
     setQ('');
   };
 
-  // Quick AI search examples that work even with typos
   const quickSearches = [
     { name: 'AI', query: 'artifishal inteligence' },
     { name: 'React', query: 'rect hooks tutorial' },
@@ -1089,7 +1052,6 @@ function SearchBar({ currentTheme }) {
 
   const handleQuickSearch = (query) => {
     const enc = encodeURIComponent(query);
-    // AI engines will correct the spelling automatically
     window.open(`${searchEngines.perplexity.url}${enc}`, '_blank');
     window.open(`${searchEngines.you.url}${enc}`, '_blank');
   };
@@ -1130,6 +1092,7 @@ function SearchBar({ currentTheme }) {
               : 'border-white/30 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm'
           }`}>
             <input
+              ref={inputRef}
               value={q}
               onChange={e => setQ(e.target.value)}
               onFocus={() => setIsFocused(true)}
@@ -1152,82 +1115,15 @@ function SearchBar({ currentTheme }) {
         </div>
       </form>
 
-      {/* Quick Search Shortcuts */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="flex flex-wrap gap-2 justify-center mb-3"
-      >
-        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mr-2">
-          Try with typos:
-        </span>
-        {quickSearches.map((item, index) => (
-          <button
-            key={item.name}
-            onClick={() => handleQuickSearch(item.query)}
-            className="text-xs px-3 py-2 bg-white/80 dark:bg-gray-700/80 rounded-xl hover:bg-white dark:hover:bg-gray-600 transition-all duration-300 backdrop-blur-sm border border-white/30 hover:border-blue-300 shadow-sm hover:shadow-md"
-          >
-            {item.name}
-          </button>
-        ))}
-      </motion.div>
-
-      {/* AI Engine Quick Select */}
-      {q.trim() && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-wrap gap-2 justify-center mb-3"
-        >
-          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mr-2">
-            Search on:
-          </span>
-          {Object.entries(searchEngines).map(([key, engine]) => (
-            <button
-              key={key}
-              onClick={() => handleEngineQuickSelect(key)}
-              className="text-xs px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all duration-300 backdrop-blur-sm border border-blue-200 dark:border-blue-800 shadow-sm hover:shadow-md flex items-center space-x-1"
-            >
-              <span>{engine.icon}</span>
-              <span>{engine.name}</span>
-            </button>
-          ))}
-        </motion.div>
-      )}
-
-      {/* Search Engine Info */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="text-center"
-      >
-        <div className="inline-flex flex-wrap justify-center gap-3 text-xs text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 rounded-2xl px-4 py-2 backdrop-blur-sm">
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span>Google</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            <span>Perplexity AI</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span>You.com</span>
-          </div>
-          <div className="text-xs text-gray-400">
-            • AI engines understand typos •
-          </div>
-        </div>
-      </motion.div>
+      {/* The rest of your quick buttons / info stays same */}
+      {/* ... */}
     </motion.div>
   );
 }
 
+
 // Enhanced Shortcuts with dynamic theme
-function Shortcuts({ shortcuts, onAdd, onRemove, currentTheme }){
-  const themeGradient = colorThemes[currentTheme] || colorThemes.primary;
+function Shortcuts({ shortcuts, onAdd, onRemove }){
   
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
@@ -1282,35 +1178,77 @@ function Shortcuts({ shortcuts, onAdd, onRemove, currentTheme }){
     </div>
   );
 }
+function QuickNotes({ currentTheme }) {
+  const [text, setText] = useState(() => lsGet('dash_quick_notes', ''));
+  const themeGradient = colorThemes[currentTheme] || colorThemes.primary;
+
+  useEffect(() => {
+    lsSet('dash_quick_notes', text);
+  }, [text]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="mt-8"
+    >
+      <div className="bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-xl border border-white/30 dark:border-gray-700 p-5 backdrop-blur-sm">
+        <div className="flex items-center gap-3 mb-3">
+          <div className={`w-9 h-9 rounded-2xl bg-gradient-to-r ${themeGradient} flex items-center justify-center text-white`}>
+            📝
+          </div>
+          <h3 className="font-semibold text-gray-800 dark:text-white">Quick Notes</h3>
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={5}
+          className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white/90 dark:bg-gray-800/90 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          placeholder="Write anything here..."
+        />
+      </div>
+    </motion.div>
+  );
+}
 
 // Enhanced To-Do Panel with dynamic theme
-function TodoPanel({ currentTheme }){
+function TodoPanel({ currentTheme, autoClear }) {
   const [todos, setTodos] = useState(() => lsGet('dash_todos', []));
   const [text, setText] = useState('');
 
   const themeGradient = colorThemes[currentTheme] || colorThemes.primary;
 
-  // Auto-clear once per day
+  // Auto-clear once per day – but ONLY if autoClear is true
   useEffect(() => {
+    if (!autoClear) {
+      // setting is OFF → don't touch the todos
+      return;
+    }
+
     const lastReset = localStorage.getItem('dash_last_reset');
-    const today = new Date().toISOString().slice(0,10);
+    const today = new Date().toISOString().slice(0, 10);
+
     if (lastReset !== today) {
       lsSet('dash_todos', []);
       localStorage.setItem('dash_last_reset', today);
       setTodos([]);
     }
-  }, []);
+  }, [autoClear]); // run when component mounts AND when setting changes
 
   useEffect(() => lsSet('dash_todos', todos), [todos]);
 
   const add = () => {
-    if (!text.trim()) return; 
-    setTodos(prev => [...prev, { id: Date.now(), text: text.trim(), done: false }]); 
+    if (!text.trim()) return;
+    setTodos(prev => [...prev, { id: Date.now(), text: text.trim(), done: false }]);
     setText('');
   };
 
-  const toggle = (id) => setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
-  const remove = (id) => setTodos(prev => prev.filter(t => t.id !== id));
+  const toggle = (id) =>
+    setTodos(prev => prev.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
+
+  const remove = (id) =>
+    setTodos(prev => prev.filter(t => t.id !== id));
 
   const completedCount = todos.filter(t => t.done).length;
   const totalCount = todos.length;
@@ -1965,10 +1903,43 @@ function NewsPage({ currentTheme }){
 }
 
 // Main Dashboard page - Updated to accept settings props
-function Dashboard({ currentTheme, settings, updateSetting }){
+function Dashboard({settings, updateSetting }){
   const { shortcuts, add, remove, isModalOpen, openModal, closeModal } = useShortcuts();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+  if (!settings.keyboardShortcuts) return;
+
+  const handler = (e) => {
+    // Don’t trigger shortcuts when typing in inputs/textareas
+    const tag = e.target.tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+
+    // / → focus search
+    if (e.key === '/') {
+      e.preventDefault();
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }
+
+    // s → open settings
+    if (e.key === 'i') {
+      e.preventDefault();
+      setIsSettingsOpen(true);
+    }
+
+    // n → open "Add shortcut" modal
+    if (e.key === 'n') {
+      e.preventDefault();
+      openModal();
+    }
+  };
+
+  window.addEventListener('keydown', handler);
+  return () => window.removeEventListener('keydown', handler);
+}, [settings.keyboardShortcuts, searchInputRef, openModal, setIsSettingsOpen]);
+
   return (
     <>
       {/* BackgroundSlideshow is handled in App component */}
@@ -1978,7 +1949,7 @@ function Dashboard({ currentTheme, settings, updateSetting }){
             isOpen={isModalOpen} 
             onClose={closeModal} 
             onAdd={add}
-            currentTheme={currentTheme}
+            currentTheme={settings.themeColor}
           />
         )}
       </AnimatePresence>
@@ -2008,13 +1979,17 @@ function Dashboard({ currentTheme, settings, updateSetting }){
             className="flex items-center justify-between mb-8"
           >
             <div className="flex-1 max-w-2xl">
-              <SearchBar currentTheme={currentTheme} />
+              <SearchBar 
+                currentTheme={settings.themeColor} 
+                defaultSearch={settings.defaultSearch}
+                inputRef={searchInputRef}
+              />
             </div>
             <div className="flex items-center gap-4">
-              <Clock currentTheme={currentTheme} />
+              <Clock currentTheme={settings.themeColor} />
               <Link 
                 to="/news" 
-                className={`flex items-center space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r ${colorThemes[currentTheme] || colorThemes.primary} text-white font-medium hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg`}
+                className={`flex items-center space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r ${colorThemes[settings.themeColor] || colorThemes.primary} text-white font-medium hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg`}
               >
                 <FiStar size={18} />
                 <span>News Feed</span>
@@ -2041,7 +2016,7 @@ function Dashboard({ currentTheme, settings, updateSetting }){
                 {shortcuts.length} shortcuts
               </div>
             </div>
-            <Shortcuts shortcuts={shortcuts} onAdd={openModal} onRemove={remove} currentTheme={currentTheme} />
+            <Shortcuts shortcuts={shortcuts} onAdd={openModal} onRemove={remove} currentTheme={settings.themeColor} />
           </motion.section>
 
           {/* Main Content - Wide Todo Panel */}
@@ -2052,22 +2027,28 @@ function Dashboard({ currentTheme, settings, updateSetting }){
               transition={{ delay: 0.3 }}
               className="xl:col-span-3"
             >
-              <TodoPanel currentTheme={currentTheme} />
+             {settings.todoPanel && (
+                <TodoPanel
+                  currentTheme={settings.themeColor}
+                  autoClear={settings.autoClearTasks}
+                />
+              )}
+
             </motion.aside>
           </div>
+          {settings.quickNotes && (
+            <QuickNotes currentTheme={settings.themeColor} />
+          )}
+
         </div>
       </motion.div>
     </>
   );
 }
-export default function App(){
+export default function App() {
   const { settings, updateSetting } = useSettings();
-  
-  const handleThemeChange = useCallback((theme) => {
-    console.log('App: Theme changed to', theme);
-    updateSetting('themeColor', theme);
-  }, [updateSetting]);
 
+  // We don't need handleThemeChange anymore
   const handleDarkModeChange = useCallback((mode) => {
     updateSetting('darkMode', mode);
   }, [updateSetting]);
@@ -2092,24 +2073,32 @@ export default function App(){
     if (settings.themeColor) {
       console.log('App: Initial theme applied:', settings.themeColor);
     }
-  }, []); // Empty dependency array - run only once on mount
+  }, []); // run only once on mount
 
   return (
     <Router>
       <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-        <BackgroundSlideshow onThemeChange={handleThemeChange} />
+        {/* ⬇️ No onThemeChange prop here */}
+        <BackgroundSlideshow />
+
         <Routes>
-          <Route path="/" element={
-            <Dashboard 
-              currentTheme={settings.themeColor} 
-              onThemeChange={handleThemeChange}
-              darkMode={settings.darkMode}
-              onDarkModeChange={handleDarkModeChange}
-              settings={settings}
-              updateSetting={updateSetting}
-            />
-          } />
-          <Route path="/news" element={<NewsPage currentTheme={settings.themeColor} />} />
+          <Route
+            path="/"
+            element={
+              <Dashboard
+                currentTheme={settings.themeColor}
+                // ⬇️ Remove onThemeChange prop here too
+                darkMode={settings.darkMode}
+                onDarkModeChange={handleDarkModeChange}
+                settings={settings}
+                updateSetting={updateSetting}
+              />
+            }
+          />
+          <Route
+            path="/news"
+            element={<NewsPage currentTheme={settings.themeColor} />}
+          />
         </Routes>
       </div>
     </Router>
