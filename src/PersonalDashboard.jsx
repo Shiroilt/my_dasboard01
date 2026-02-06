@@ -4,7 +4,325 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiPlus, FiClock, FiSettings, FiTrash2, FiX, FiExternalLink, FiCheck, FiList, FiStar, FiHome } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiClock, FiSettings, FiTrash2, FiX, FiExternalLink, FiCheck, FiList, FiStar, FiHome, FiWifi, FiWifiOff } from 'react-icons/fi';
+import { FaBluetooth } from 'react-icons/fa';
+
+// Connection Status Component - Only shows when disconnected!
+function ConnectionStatus({ settings }) {
+  const [wifiStatus, setWifiStatus] = useState({ connected: true, strength: 100 });
+  const [bluetoothStatus, setBluetoothStatus] = useState({ connected: true, deviceName: '' });
+
+  const colorThemes = {
+    primary: 'from-blue-500 to-purple-600',
+    secondary: 'from-emerald-500 to-teal-600',
+    accent: 'from-orange-500 to-red-500',
+    neutral: 'from-gray-500 to-slate-600'
+  };
+
+  useEffect(() => {
+    // Check WiFi status
+    const checkWiFiStatus = () => {
+      const isOnline = navigator.onLine;
+      const strength = isOnline ? Math.floor(Math.random() * 30) + 70 : 0;
+      
+      setWifiStatus({
+        connected: isOnline,
+        strength: strength
+      });
+    };
+
+    // Check Bluetooth audio output
+    const checkBluetoothAudio = async () => {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+          // API not supported
+          setBluetoothStatus({ connected: true, deviceName: '' });
+          return;
+        }
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+        
+        // Check if any Bluetooth audio device is present
+        const hasBluetoothAudio = audioOutputs.some(device => {
+          const label = device.label.toLowerCase();
+          return label.includes('bluetooth') || 
+                 label.includes('wireless') || 
+                 label.includes('bt') ||
+                 label.includes('rockerz') ||
+                 label.includes('airpods') ||
+                 label.includes('headset') ||
+                 label.includes('earphone') ||
+                 label.includes('headphone');
+        });
+
+        if (hasBluetoothAudio) {
+          setBluetoothStatus({ connected: true, deviceName: 'Bluetooth Device' });
+        } else {
+          setBluetoothStatus({ connected: false, deviceName: '' });
+        }
+      } catch (error) {
+        console.log('Bluetooth detection error:', error);
+        // If permission denied or error, don't show false alert
+        setBluetoothStatus({ connected: true, deviceName: '' });
+      }
+    };
+
+    checkWiFiStatus();
+    checkBluetoothAudio();
+
+    window.addEventListener('online', checkWiFiStatus);
+    window.addEventListener('offline', checkWiFiStatus);
+
+    // Check audio devices periodically
+    const interval = setInterval(() => {
+      checkWiFiStatus();
+      checkBluetoothAudio();
+    }, 3000);
+
+    return () => {
+      window.removeEventListener('online', checkWiFiStatus);
+      window.removeEventListener('offline', checkWiFiStatus);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const themeGradient = settings.themeColor === 'secondary' ? 'from-emerald-500 to-teal-600' :
+                        settings.themeColor === 'accent' ? 'from-orange-500 to-red-500' :
+                        settings.themeColor === 'neutral' ? 'from-gray-500 to-slate-600' :
+                        'from-blue-500 to-purple-600';
+
+  // Only show if something is disconnected
+  const showWiFiAlert = !wifiStatus.connected;
+  const showBluetoothAlert = !bluetoothStatus.connected;
+  
+  if (!showWiFiAlert && !showBluetoothAlert) {
+    return null;
+  }
+
+  return (
+    <>
+      {/* Alerts - Only show if disconnected */}
+      <div className="fixed bottom-6 right-6 z-50 space-y-3">
+        <AnimatePresence>
+        {/* WiFi Disconnected Alert */}
+        {showWiFiAlert && (
+          <motion.div
+            initial={{ opacity: 0, x: 100, scale: 0.8 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 100, scale: 0.8 }}
+            className="relative"
+          >
+            {/* Pulsing glow effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl blur-xl"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 0.8, 0.5],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+
+            {/* Main alert card */}
+            <motion.div
+              className="relative bg-gradient-to-br from-red-500 to-rose-600 p-4 rounded-2xl shadow-2xl backdrop-blur-sm border-2 border-red-400/50 min-w-[280px]"
+              animate={{
+                y: [0, -5, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <div className="flex items-center space-x-4">
+                {/* Animated Icon */}
+                <motion.div
+                  className="relative"
+                  animate={{
+                    rotate: [0, -15, 15, -15, 0],
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: Infinity,
+                    repeatDelay: 2
+                  }}
+                >
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <FiWifiOff size={28} className="text-white" />
+                  </div>
+                  
+                  {/* Warning Badge */}
+                  <motion.div
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center"
+                    animate={{
+                      scale: [1, 1.3, 1],
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                    }}
+                  >
+                    <span className="text-xs font-bold text-red-600">!</span>
+                  </motion.div>
+                </motion.div>
+
+                {/* Text Content */}
+                <div className="flex-1">
+                  <motion.h4 
+                    className="text-white font-bold text-lg"
+                    animate={{ opacity: [1, 0.7, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    WiFi Disconnected
+                  </motion.h4>
+                  <p className="text-white/90 text-sm">No internet connection</p>
+                </div>
+
+                {/* Close button */}
+                <button
+                  onClick={() => setWifiStatus(prev => ({ ...prev, connected: true }))}
+                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <FiX size={18} className="text-white" />
+                </button>
+              </div>
+
+              {/* Animated particles */}
+              <motion.div
+                className="absolute top-0 left-0 w-2 h-2 bg-white rounded-full"
+                animate={{
+                  x: [0, 280, 280, 0, 0],
+                  y: [0, 0, 100, 100, 0],
+                  opacity: [0, 1, 1, 1, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Bluetooth Disconnected Alert */}
+        {showBluetoothAlert && (
+          <motion.div
+            initial={{ opacity: 0, x: 100, scale: 0.8 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 100, scale: 0.8 }}
+            transition={{ delay: 0.2 }}
+            className="relative"
+          >
+            {/* Pulsing glow effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl blur-xl"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 0.8, 0.5],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5
+              }}
+            />
+
+            {/* Main alert card */}
+            <motion.div
+              className="relative bg-gradient-to-br from-red-500 to-pink-600 p-4 rounded-2xl shadow-2xl backdrop-blur-sm border-2 border-pink-400/50 min-w-[280px]"
+              animate={{
+                y: [0, -5, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5
+              }}
+            >
+              <div className="flex items-center space-x-4">
+                {/* Animated Icon */}
+                <motion.div
+                  className="relative"
+                  animate={{
+                    rotate: [0, -15, 15, -15, 0],
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: Infinity,
+                    repeatDelay: 2
+                  }}
+                >
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <FaBluetooth size={28} className="text-white" />
+                  </div>
+                  
+                  {/* Warning Badge */}
+                  <motion.div
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center"
+                    animate={{
+                      scale: [1, 1.3, 1],
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                    }}
+                  >
+                    <span className="text-xs font-bold text-red-600">!</span>
+                  </motion.div>
+                </motion.div>
+
+                {/* Text Content */}
+                <div className="flex-1">
+                  <motion.h4 
+                    className="text-white font-bold text-lg"
+                    animate={{ opacity: [1, 0.7, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    Bluetooth Off
+                  </motion.h4>
+                  <p className="text-white/90 text-sm">No devices connected</p>
+                </div>
+
+                {/* Close button */}
+                <button
+                  onClick={() => setBluetoothStatus(prev => ({ ...prev, connected: true }))}
+                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <FiX size={18} className="text-white" />
+                </button>
+              </div>
+
+              {/* Animated particles */}
+              <motion.div
+                className="absolute top-0 left-0 w-2 h-2 bg-white rounded-full"
+                animate={{
+                  x: [0, 280, 280, 0, 0],
+                  y: [0, 0, 100, 100, 0],
+                  opacity: [0, 1, 1, 1, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "linear",
+                  delay: 0.5
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </div>
+    </>
+  );
+}
 
 function useSettings() {
   const [settings, setSettings] = useState(() => {
@@ -619,16 +937,22 @@ const backgroundImages = [
   '/backgrounds/bg3.jpeg',
   '/backgrounds/bg4.jpeg',
   '/backgrounds/bg5.jpeg',
-  '/backgrounds/bg6.jpeg',
-  '/backgrounds/bg7.jpeg',
+  '/backgrounds/bg6.jpg',
+  '/backgrounds/bg7.jpg',
   '/backgrounds/bg8.jpeg',
-  '/backgrounds/bg9.jpeg',
+  '/backgrounds/bg9.jpg',
   '/backgrounds/bg10.jpeg',
-  '/backgrounds/bg11.jpeg',
+  '/backgrounds/bg11.jpg',
   '/backgrounds/bg12.jpeg',
-  '/backgrounds/bg13.jpeg',
-  '/backgrounds/bg14.jpeg',
-  '/backgrounds/bg15.jpeg'
+  '/backgrounds/bg13.jpg',
+  '/backgrounds/bg14.jpg',
+  '/backgrounds/bg15.jpg',
+  '/backgrounds/bg16.jpg',
+  '/backgrounds/bg17.jpg',
+  '/backgrounds/bg18.jpg',
+  '/backgrounds/bg19.jpg',
+  '/backgrounds/bg20.jpg',
+  '/backgrounds/bg21.jpg'
 ];
 
 // Color themes that match common background colors
@@ -2080,6 +2404,9 @@ export default function App() {
       <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
         {/* ⬇️ No onThemeChange prop here */}
         <BackgroundSlideshow />
+
+        {/* Global Connection Status Notifications - Only shows when disconnected */}
+        <ConnectionStatus settings={settings} />
 
         <Routes>
           <Route
